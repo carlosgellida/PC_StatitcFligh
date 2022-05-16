@@ -1,7 +1,9 @@
+#include <conio.h>
 #include <iostream>
 #include <string>
 #include <WinSock2.h>
 #include <Ws2tcpip.h>
+#include <time.h> 
 
 
 #pragma comment(lib, "ws2_32.lib")
@@ -15,6 +17,8 @@ struct autogiroVar {
     char servo3;
 };
 
+clock_t t, deltaT;
+
 
 int main() {
     char pythonTime[11];
@@ -24,7 +28,7 @@ int main() {
     _WSABUF pythonTime2;
 
 
-    string pkt_string = "Grettings!"; // This is the message to be send
+    string pkt_string = "Give me the data"; // This is the message to be send
     const char* pkt = &pkt_string[0]; // Message is converted co const char * type to be send
     const char* host = "127.0.0.1"; // Local host
 
@@ -49,22 +53,36 @@ int main() {
     SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     bind(s, (sockaddr*)&local, sizeof(local));
 
-    sendto(s, pkt, pkt_string.size(), 0, (sockaddr*)&dest, sizeof(dest));
+    t = clock(); // time restart
+    int ms = 1000; 
 
-    int result, error, addrSize;
-    char message[100];
+    while (!_kbhit()) {
+        deltaT = clock() - t; 
 
-    result = recvfrom(s, message, 100, 0, (SOCKADDR*)&dest, &fromlen);
-    if (result == SOCKET_ERROR) {
-        error = WSAGetLastError();
-        std::cout << "Receive failed. Error: " << error << std::endl;
+        if (deltaT > ms) { // Esto se ejecuta cada "ms" ms
+            t = clock(); 
+
+            sendto(s, pkt, pkt_string.size(), 0, (sockaddr*)&dest, sizeof(dest));
+
+            int result, error, addrSize;
+            char message[100];
+
+            result = recvfrom(s, message, 100, 0, (SOCKADDR*)&dest, &fromlen);
+            if (result == SOCKET_ERROR) {
+                error = WSAGetLastError();
+                std::cout << "Receive failed. Error: " << error << std::endl;
+
+            }
+            std::cout << "Received " << result << " byte(s) from " << inet_ntoa(dest.sin_addr) << ":" << ntohs(dest.sin_port) << std::endl;
+            if (result > 0) {
+                std::cout.write(message, result);
+                std::cout << std::endl;
+            }
+        }
 
     }
-    std::cout << "Received " << result << " byte(s) from " << inet_ntoa(dest.sin_addr) << ":" << ntohs(dest.sin_port) << std::endl;
-    if (result > 0) {
-        std::cout.write(message, result);
-        std::cout << std::endl;
-    }
+
+    
 
 
     return 0;
