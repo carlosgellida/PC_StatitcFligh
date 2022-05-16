@@ -1,0 +1,6 @@
+﻿  PC_StaticFlightProgram.cpp
+C:\Users\robot\Documents\Programacion\PC_StaticFlightProgram\PC_StaticFlightProgram\PC_StaticFlightProgram.cpp(52,72): warning C4267: 'argumento': conversión de 'size_t' a 'int'; posible pérdida de datos
+C:\Users\robot\Documents\Programacion\PC_StaticFlightProgram\PC_StaticFlightProgram\PC_StaticFlightProgram.cpp(54,24): warning C4101: 'addrSize': variable local sin referencia
+C:\Users\robot\Documents\Programacion\PC_StaticFlightProgram\PC_StaticFlightProgram\PC_StaticFlightProgram.cpp(24,13): warning C4101: 'pythonTime2': variable local sin referencia
+C:\Users\robot\Documents\Programacion\PC_StaticFlightProgram\PC_StaticFlightProgram\PC_StaticFlightProgram.cpp(20,10): warning C4101: 'pythonTime': variable local sin referencia
+  PC_StaticFlightProgram.vcxproj -> C:\Users\robot\Documents\Programacion\PC_StaticFlightProgram\x64\Debug\PC_StaticFlightProgram.exe
