@@ -1,89 +1,114 @@
-#include <conio.h>
 #include <iostream>
+#include <fstream>
+#include "HTTPRequest.hpp"
 #include <string>
-#include <WinSock2.h>
-#include <Ws2tcpip.h>
 #include <time.h> 
+#include <sstream>
 
-
-#pragma comment(lib, "ws2_32.lib")
-using namespace std;
-
-struct autogiroVar {
-    char motor1;
-    char motor2;
-    char servo1;
-    char servo2;
-    char servo3;
-};
+using namespace std; 
 
 clock_t t, deltaT;
+string sCompactState ;
+string extendedState ; 
 
+char compactState[6]; 
 
-int main() {
-    char pythonTime[11];
+class State {
+public: 
+    char motor0, motor1, servo0, servo1, servo2; 
+    State(); 
+    void updateState(const char*);
+    int getMotor0(void) ;
+    int getMotor1(void);
+    int getServo0(void);
+    int getServo1(void);
+    int getServo2(void);
+    void getExtendedState(void); 
+};
 
-    DWORD flags = 0;
+State::State() {
+    motor0 = 0; 
+    motor1 = 0; 
+    servo0 = 0;
+    servo1 = 0;
+    servo2 = 0; 
+}
 
-    _WSABUF pythonTime2;
+void State::updateState(const char* sCompact) {
+    motor0 = sCompact[0];
+    motor1 = sCompact[1];
+    servo0 = sCompact[2];
+    servo1 = sCompact[3];
+    servo2 = sCompact[4];
+}
 
+int State::getMotor0(void) {
+    return (255*(int)this->motor0)/180 + 1; 
+}
 
-    string pkt_string = "Give me the data"; // This is the message to be send
-    const char* pkt = &pkt_string[0]; // Message is converted co const char * type to be send
-    const char* host = "127.0.0.1"; // Local host
+int State::getMotor1(void) {
+    return (255*(int)this->motor1)/180 + 1;
+}
 
+int State::getServo0(void) {
+    int angle = this->servo0;
+    angle = angle - 90; 
+    return angle;
+}
 
-    sockaddr_in dest;
-    sockaddr_in local;
-    WSAData data;
+int State::getServo1(void) {
+    int angle = (int)this->servo1; 
+    angle = angle - 90;
+    return angle;
+}
 
-    WSAStartup(MAKEWORD(2, 2), &data);
+int State::getServo2(void) {
+    int angle = (int)this->servo2;
+    angle = angle - 90;
+    return angle;
+}
 
-    local.sin_family = AF_INET;
-    local.sin_port = htons(0);
-    inet_pton(AF_INET, host, &local.sin_addr.s_addr);
+void State::getExtendedState(void) {
+    string extendedState; 
+    ostringstream osExtendedState;
+    osExtendedState.str(""); 
+    osExtendedState << this->getMotor0() << " " << this->getMotor1() << " " << this->getServo0() << " " << this->getServo1() << " " << this->getServo2() << endl ;
+    cout << osExtendedState.str() << endl ;
+    
+}
 
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(50000);
-    inet_pton(AF_INET, host, &dest.sin_addr.s_addr);
+int main(int argc, const char* argv[])
+{
+    sCompactState = "00000"; 
 
-    int fromlen = sizeof(dest);
-
-
-    SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    bind(s, (sockaddr*)&local, sizeof(local));
-
+    State state;
+    
     t = clock(); // time restart
-    int ms = 1000; 
+    int ms = 1000;
 
-    while (!_kbhit()) {
-        deltaT = clock() - t; 
+    try
+    {
+        // you can pass http::InternetProtocol::V6 to Request to make an IPv6 request
+        http::Request request{ "http://esp32.local/getData" };
 
-        if (deltaT > ms) { // Esto se ejecuta cada "ms" ms
-            t = clock(); 
+        // send a get request
+        const auto response = request.send("GET");
 
-            sendto(s, pkt, pkt_string.size(), 0, (sockaddr*)&dest, sizeof(dest));
+        sCompactState = string{ response.body.begin(), response.body.end() }; // Storage recieved data into a string
 
-            int result, error, addrSize;
-            char message[100];
+        cout << sCompactState << endl; 
 
-            result = recvfrom(s, message, 100, 0, (SOCKADDR*)&dest, &fromlen);
-            if (result == SOCKET_ERROR) {
-                error = WSAGetLastError();
-                std::cout << "Receive failed. Error: " << error << std::endl;
+        state.updateState(sCompactState.c_str()); // Stirage the data into an object
 
-            }
-            std::cout << "Received " << result << " byte(s) from " << inet_ntoa(dest.sin_addr) << ":" << ntohs(dest.sin_port) << std::endl;
-            if (result > 0) {
-                std::cout.write(message, result);
-                std::cout << std::endl;
-            }
-        }
+        cout << state.getMotor0() << endl;
+
+        state.getExtendedState(); 
 
     }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Request failed, error: " << e.what() << '\n';
+    }
 
-    
-
-
-    return 0;
+    return EXIT_SUCCESS;
 }
